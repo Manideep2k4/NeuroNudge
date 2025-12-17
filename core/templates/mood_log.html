@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+{% block title %}Log Your Mood - NeuroNudge{% endblock %}
+
+{% block content %}
+<div class="card shadow p-4 mt-4 bg-light rounded-4">
+    <h4 class="mb-3 text-success">📝 Log Your Mood</h4>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-success">Your Mood</label>
+            {{ form.mood }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-semibold text-success">Your Thoughts</label>
+            {{ form.note }}
+        </div>
+        <button type="submit" class="btn btn-success rounded-pill">Save Entry</button>
+    </form>
+</div>
+{% endblock %}

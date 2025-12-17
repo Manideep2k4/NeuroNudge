@@ -1,0 +1,227 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block title %}Dashboard - NeuroNudge{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-5">
+    <h2 class="text-success mb-4">👋 Welcome, {{ user.username }}</h2>
+
+    <!-- Mood Entry with Sentiment -->
+    {% if latest_mood %}
+        <div class="alert alert-info shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+            <div>
+                <strong>🧠 Last Mood Entry:</strong> {{ latest_mood.get_mood_display }}<br>
+                <small class="text-muted">{{ latest_mood.date|date:"M d, Y" }}</small><br>
+                <em class="text-muted">{{ latest_mood.note }}</em><br>
+            </div>
+            <a href="{% url 'mood_log' %}" class="btn btn-outline-success btn-sm mt-2 mt-md-0">Update Mood</a>
+        </div>
+
+        {% if latest_mood.sentiment %}
+        <div class="alert 
+            {% if latest_mood.sentiment == 'positive' %}
+                alert-success
+            {% elif latest_mood.sentiment == 'neutral' %}
+                alert-warning
+            {% elif latest_mood.sentiment == 'negative' %}
+                alert-danger
+            {% else %}
+                alert-secondary
+            {% endif %}
+            shadow-sm mt-2">
+            <strong>🧠 Sentiment Analysis:</strong> {{ latest_mood.sentiment|capfirst }}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-warning shadow-sm">
+            You haven’t logged your mood yet. <a href="{% url 'mood_log' %}">Click here to log your mood</a>.
+        </div>
+    {% endif %}
+
+    {% if all_completed and habits %}
+    <div class="alert alert-success text-center shadow-sm">
+        🎉 <strong>Congratulations!</strong> You've completed all your habits for today!
+    </div>
+    {% endif %}
+
+    <!-- Pomodoro Timer Section -->
+    <div class="card shadow-sm p-4 rounded-4 mt-4">
+        <h4 class="mb-3">⏱️ Focus Session</h4>
+
+        <form method="POST" action="{% url 'start_pomodoro' %}" id="pomodoroForm">
+            {% csrf_token %}
+            <div class="row g-2">
+                <div class="col-12 col-sm-8">
+                    <select name="habit_id" class="form-select rounded-pill" required>
+                        <option value="">🎯 Tag a Habit</option>
+                        {% for habit in habits %}
+                            <option value="{{ habit.id }}">{{ habit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-4">
+                    <button type="submit" class="btn btn-outline-primary rounded-pill w-100">▶ Start Focus</button>
+                </div>
+            </div>
+        </form>
+
+        {% if request.user.pomodorosession_set.last and not request.user.pomodorosession_set.last.end_time %}
+        <input type="hidden" id="pomodoro-start" value="{{ request.user.pomodorosession_set.last.start_time|date:'c' }}">
+        <div class="mt-3">
+            <form method="POST" action="{% url 'stop_pomodoro' request.user.pomodorosession_set.last.id %}">
+                {% csrf_token %}
+                <p class="text-muted mt-2">
+                    ⏳ Active Session Started: {{ request.user.pomodorosession_set.last.start_time|date:"H:i" }}
+                    {% if request.user.pomodorosession_set.last.habit %}
+                    (Tag: {{ request.user.pomodorosession_set.last.habit.name }})
+                    {% endif %}
+                </p>
+                <p id="countdown" class="text-primary small fw-bold"></p>
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill"
+                    onclick="return confirm('Are you sure you want to stop this Pomodoro session?')">■ Stop Focus</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Today's Habits -->
+    <div class="card shadow-sm p-4 rounded-4 bg-light mt-4">
+        <h4 class="mb-3">Your Habits for {{ today }}</h4>
+        {% if habits %}
+        <div class="row g-3">
+            {% for habit in habits %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div>
+                            <strong>{{ habit.name }}</strong>
+                            <div class="small text-muted">{{ habit.description }}</div>
+                            <div class="small mt-1">
+                                Streak: <span class="badge bg-success">{{ habit.streak }}</span>
+                                {% if habit.last_completed == today %}
+                                <span class="badge bg-secondary">Done Today</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if habit.last_completed != today %}
+                        <a href="{% url 'complete_habit' habit.id %}" class="btn btn-outline-success btn-sm mt-2">Mark Done</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">You haven't added any habits yet.</p>
+        {% endif %}
+        <div class="text-end mt-3">
+            <a href="{% url 'add_habit' %}" class="btn btn-success rounded-pill">+ Add New Habit</a>
+        </div>
+    </div>
+
+    <!-- Calendar & Habit History -->
+    <div class="row mt-5 g-4">
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white fw-bold text-center">
+                    📅 Habit & Pomodoro Calendar
+                </div>
+                <div class="card-body p-3">
+                    <div id="habitCalendar" class="mini-calendar"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            {% for habit in habits %}
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title d-flex justify-content-between">
+                        {{ habit.name }}
+                        <span class="badge bg-success">Streak: {{ habit.streak }}</span>
+                    </h5>
+                    <p class="card-text text-muted">{{ habit.description }}</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'edit_habit' habit.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                        <a href="{% url 'delete_habit' habit.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
+                        <a href="{% url 'archive_habit' habit.id %}" class="btn btn-outline-warning btn-sm">Archive</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Archived Link -->
+    <div class="text-center mt-4">
+        <a href="{% url 'archived_habits' %}" class="btn btn-outline-secondary">📁 View Archived Habits</a>
+    </div>
+</div>
+
+<!-- Calendar JSON Data -->
+<script type="application/json" id="habit-events-data">
+[
+    {% for entry in completion_logs %}
+    {
+        "title": "✅ {{ entry.habit.name|escapejs }}",
+        "start": "{{ entry.date|date:'Y-m-d' }}",
+        "color": "#66bb6a"
+    }{% if not forloop.last or pomodoros %},{% endif %}
+    {% endfor %}
+    {% for session in pomodoros %}
+    {
+        "title": "⏱ {{ session.habit.name|default:'Pomodoro'|escapejs }}",
+        "start": "{{ session.start_time|date:'Y-m-d' }}",
+        "color": "#42a5f5"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+
+<!-- Calendar Assets -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="{% static 'core/js/dashboard.js' %}"></script>
+
+<style>
+    .mini-calendar {
+        width: 100%;
+        font-size: 0.78rem;
+    }
+
+    .fc {
+        background-color: #fdfdfc;
+        border-radius: 8px;
+        padding: 8px;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    .fc .fc-toolbar-title {
+        color: #2e7d32;
+        font-size: 1rem;
+    }
+
+    .fc-daygrid-day-number {
+        color: #2e7d32;
+        font-weight: 500;
+    }
+
+    .fc-daygrid-event {
+        background-color: #81c784 !important;
+        color: white;
+        border-radius: 3px;
+        border: none;
+        padding: 2px 4px;
+    }
+
+    .fc-button {
+        background-color: #66bb6a !important;
+        border: none;
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    .fc-button:hover {
+        background-color: #388e3c !important;
+    }
+</style>
+{% endblock %}

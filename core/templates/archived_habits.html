@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+{% block title %}Archived Habits - NeuroNudge{% endblock %}
+
+{% block content %}
+<h3 class="text-muted mb-4">🗃️ Archived Habits</h3>
+
+{% if habits %}
+    <div class="row">
+        {% for habit in habits %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title d-flex justify-content-between align-items-center">
+                        {{ habit.name }}
+                        <span class="badge bg-secondary">Archived</span>
+                    </h5>
+                    <p class="card-text text-muted">{{ habit.description }}</p>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'unarchive_habit' habit.id %}" class="btn btn-outline-success btn-sm">Unarchive</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-warning">No archived habits found.</div>
+{% endif %}
+
+<a href="{% url 'dashboard' %}" class="btn btn-primary mt-310"> Back to Dashboard</a>
+{% endblock %}

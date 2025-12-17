@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+{% block title %}NeuroNudge AI Habit Coach{% endblock %}
+
+{% block content %}
+
+<!-- 🌟 Hero Section -->
+<section class="text-center py-5 bg-light rounded-4 shadow-sm">
+    <h1 class="display-4 fw-bold text-success">🧠 NeuroNudge</h1>
+    <p class="lead text-muted">Build better habits with personalized nudges, daily tracking, and emotional insights.</p>
+    <div class="mt-4 d-flex justify-content-center gap-3">
+        <!-- <a href="{% url 'register' %}" class="btn btn-success btn-lg rounded-pill px-4">Get Started</a> -->
+    </div>
+</section>
+
+<!-- 🚀 How It Works -->
+<section class="container text-center py-5">
+    <h2 class="mb-4 text-success">How NeuroNudge Works</h2>
+    <div class="row">
+        <div class="col-md-4">
+            <h5>✅ Track Habits</h5>
+            <p class="text-muted">Easily add and complete habits daily to stay consistent.</p>
+        </div>
+        <div class="col-md-4">
+            <h5>📈 Get Nudges</h5>
+            <p class="text-muted">Receive smart behavioral nudges based on your habit loops and timing.</p>
+        </div>
+        <div class="col-md-4">
+            <h5>🪞 Reflect & Improve</h5>
+            <p class="text-muted">Use journaling and emotional logging to grow self-awareness over time.</p>
+        </div>
+    </div>
+</section>
+
+
+<section class="text-center py-5 bg-success text-white rounded-4 mt-4">
+    <h2>Ready to build powerful habits?</h2>
+    <p class="lead">Join NeuroNudge and take the first step toward lasting change.</p>
+    <a href="{% url 'register' %}" class="btn btn-light btn-lg rounded-pill mt-3">Get Started</a>
+</section>
+
+{% endblock %}
